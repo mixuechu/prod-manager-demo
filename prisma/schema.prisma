@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Script {
+  id        Int      @id @default(autoincrement())
+  title     String
+  author    String
+  content   String
+  summary   String?
+  status    String   @default("draft") // draft, reviewing, published
+  coverImage String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联
+  scenes    Scene[]
+  characters Character[]
+  resources  Resource[]
+  comments   Comment[]
+}
+
+model Scene {
+  id          Int      @id @default(autoincrement())
+  name        String
+  content     String
+  duration    Int?     // 预估时长（分钟）
+  location    String?
+  intensity   Float?   // 场景强度 0-1
+  scriptId    Int
+  script      Script   @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 关联
+  characters  CharacterScene[]
+  resources   ResourceScene[]
+}
+
+model Character {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  scriptId    Int
+  script      Script   @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 关联
+  scenes      CharacterScene[]
+}
+
+model Resource {
+  id          Int      @id @default(autoincrement())
+  name        String
+  type        String   // prop, costume, location, etc.
+  description String?
+  scriptId    Int
+  script      Script   @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 关联
+  scenes      ResourceScene[]
+}
+
+model Comment {
+  id          Int      @id @default(autoincrement())
+  content     String
+  scriptId    Int
+  script      Script   @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 多对多关系表
+model CharacterScene {
+  id          Int       @id @default(autoincrement())
+  characterId Int
+  sceneId     Int
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  scene       Scene     @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  dialogues   Int?      // 对话数量
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([characterId, sceneId])
+}
+
+model ResourceScene {
+  id          Int       @id @default(autoincrement())
+  resourceId  Int
+  sceneId     Int
+  resource    Resource  @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  scene       Scene     @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([resourceId, sceneId])
+} 

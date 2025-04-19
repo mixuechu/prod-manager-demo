@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能制片管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+    <style>
+        :root {
+            --primary-color: #6c5ce7;
+            --secondary-color: #a29bfe;
+        }
+        .sidebar {
+            background: linear-gradient(180deg, #2d3436 0%, #1e272e 100%);
+            color: white;
+            height: 100vh;
+            position: fixed;
+        }
+        .main-content {
+            margin-left: 280px;
+            padding: 20px;
+        }
+        .nav-link {
+            color: rgba(255,255,255,0.8);
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .progress-thin {
+            height: 6px;
+        }
+        .character-avatar {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        #sceneGraph {
+            height: 500px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .timeline-item {
+            border-left: 3px solid var(--primary-color);
+            padding-left: 15px;
+            margin-bottom: 20px;
+        }
+        .costume-tag {
+            display: inline-block;
+            background: #ffeaa7;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="sidebar col-md-3 col-lg-2 d-md-block p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4><i class="mdi mdi-movie-roll"></i> 制片助手</h4>
+                    <button class="btn btn-sm btn-outline-light d-md-none">×</button>
+                </div>
+                
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#"><i class="mdi mdi-home"></i> 项目概览</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="mdi mdi-script-text"></i> 剧本分析</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="mdi mdi-account-group"></i> 角色管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="mdi mdi-tshirt-crew"></i> 服装道具</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="mdi mdi-calendar-clock"></i> 拍摄排期</a>
+                    </li>
+                    <li class="nav-item mt-4">
+                        <a class="nav-link text-warning" href="#"><i class="mdi mdi-lightning-bolt"></i> AI智能生成</a>
+                    </li>
+                </ul>
+                
+                <div class="mt-auto pt-4">
+                    <div class="card bg-dark text-white p-3">
+                        <h6>当前项目</h6>
+                        <select class="form-select bg-dark text-white border-dark">
+                            <option>《消失的时间》电影版</option>
+                            <option>《夏日回忆》广告片</option>
+                        </select>
+                        <button class="btn btn-sm btn-primary mt-2">+ 新建项目</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主内容区 -->
+            <main class="main-content col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">《消失的时间》剧本分析</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button class="btn btn-sm btn-outline-secondary">导出PDF</button>
+                            <button class="btn btn-sm btn-outline-secondary">分享</button>
+                        </div>
+                        <button class="btn btn-sm btn-primary">
+                            <i class="mdi mdi-autorenew"></i> 重新生成
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 上传面板 -->
+                <div class="alert alert-info d-flex align-items-center">
+                    <i class="mdi mdi-information-outline me-2 fs-4"></i>
+                    <div>已成功解析剧本《消失的时间_v3.fdx》，共28场戏，12个角色</div>
+                </div>
+
+                <!-- 核心功能标签页 -->
+                <ul class="nav nav-tabs mb-4" id="mainTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="graph-tab" data-bs-toggle="tab" data-bs-target="#graph" type="button">故事图谱</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="breakdown-tab" data-bs-toggle="tab" data-bs-target="#breakdown" type="button">服化道清单</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="schedule-tab" data-bs-toggle="tab" data-bs-target="#schedule" type="button">顺场表</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline" type="button">拍摄计划</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="mainTabsContent">
+                    <!-- 故事图谱 -->
+                    <div class="tab-pane fade show active" id="graph" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="card mb-4 card-hover">
+                                    <div class="card-header d-flex justify-content-between">
+                                        <span>场景关系图</span>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-secondary">人物</button>
+                                            <button class="btn btn-outline-secondary">时间线</button>
+                                            <button class="btn btn-outline-primary">空间</button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="sceneGraph" class="d-flex justify-content-center align-items-center">
+                                            <!-- 这里实际应使用D3.js等可视化库 -->
+                                            <img src="https://fakeimg.pl/800x400/6c5ce7/ffffff?text=场景关系可视化图" 
+                                                 class="img-fluid rounded" 
+                                                 alt="场景关系图">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card mb-4 card-hover">
+                                    <div class="card-header">角色关系</div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <img src="https://fakeimg.pl/40x40/ff7675/ffffff?text=张" class="character-avatar me-2">
+                                                <div>
+                                                    <strong>张三</strong>
+                                                    <div class="text-muted small">男主角</div>
+                                                </div>
+                                            </div>
+                                            <div class="ps-5">
+                                                <div class="d-flex small mb-1">
+                                                    <span class="text-muted me-2">妻子</span>
+                                                    <span>李四</span>
+                                                </div>
+                                                <div class="d-flex small">
+                                                    <span class="text-muted me-2">对手</span>
+                                                    <span>王五</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- 更多角色... -->
+                                    </div>
+                                </div>
+
+                                <div class="card card-hover">
+                                    <div class="card-header">场景统计</div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between small mb-1">
+                                                <span>内景</span>
+                                                <span>18场 (64%)</span>
+                                            </div>
+                                            <div class="progress progress-thin">
+                                                <div class="progress-bar bg-primary" style="width: 64%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between small mb-1">
+                                                <span>日戏</span>
+                                                <span>22场 (79%)</span>
+                                            </div>
+                                            <div class="progress progress-thin">
+                                                <div class="progress-bar bg-warning" style="width: 79%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 服化道清单 -->
+                    <div class="tab-pane fade" id="breakdown" role="tabpanel">
+                        <div class="card mb-4 card-hover">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>服装清单</span>
+                                <button class="btn btn-sm btn-outline-primary">导出Excel</button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>服装名称</th>
+                                                <th>角色</th>
+                                                <th>场次</th>
+                                                <th>数量</th>
+                                                <th>状态</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>商务西装（藏蓝）</td>
+                                                <td>张三</td>
+                                                <td>S1, S3, S5</td>
+                                                <td>2套</td>
+                                                <td><span class="badge bg-success">已准备</span></td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-secondary">详情</button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>婚纱（复古）</td>
+                                                <td>李四</td>
+                                                <td>S8, S12</td>
+                                                <td>1套</td>
+                                                <td><span class="badge bg-warning">待租赁</span></td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-secondary">详情</button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card card-hover">
+                                    <div class="card-header">道具清单</div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>古董怀表</strong>
+                                                <span class="text-muted small">S2, S7</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between small">
+                                                <span class="text-muted">需提前3天租赁</span>
+                                                <span class="badge bg-info">特殊道具</span>
+                                            </div>
+                                        </div>
+                                        <!-- 更多道具... -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card card-hover">
+                                    <div class="card-header">场景需求</div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>医院走廊</strong>
+                                                <span class="text-muted small">S5-S7</span>
+                                            </div>
+                                            <div class="small text-muted">需夜间拍摄许可</div>
+                                        </div>
+                                        <!-- 更多场景... -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 顺场表 -->
+                    <div class="tab-pane fade" id="schedule" role="tabpanel">
+                        <div class="card mb-4 card-hover">
+                            <div class="card-header d-flex justify-content-between">
+                                <span>场景顺序表</span>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-secondary me-2">按时间排序</button>
+                                    <button class="btn btn-sm btn-outline-primary">按地点排序</button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>场号</th>
+                                                <th>页数</th>
+                                                <th>场景</th>
+                                                <th>概要</th>
+                                                <th>角色</th>
+                                                <th>服装/道具</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>S1</td>
+                                                <td>1-3</td>
+                                                <td>内景-客厅/日</td>
+                                                <td>夫妻争吵戏</td>
+                                                <td>张三, 李四</td>
+                                                <td>
+                                                    <span class="costume-tag">西装</span>
+                                                    <span class="costume-tag">茶杯</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>S2</td>
+                                                <td>4-5</td>
+                                                <td>外景-公园/黄昏</td>
+                                                <td>发现怀表</td>
+                                                <td>张三</td>
+                                                <td>
+                                                    <span class="costume-tag">风衣</span>
+                                                    <span class="costume-tag">怀表</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 拍摄计划 -->
+                    <div class="tab-pane fade" id="timeline" role="tabpanel">
+                        <div class="card mb-4 card-hover">
+                            <div class="card-header d-flex justify-content-between">
+                                <span>拍摄日程</span>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-secondary me-2">上周</button>
+                                    <button class="btn btn-sm btn-primary me-2">本周</button>
+                                    <button class="btn btn-sm btn-outline-secondary">下周</button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="timeline-item">
+                                    <div class="d-flex justify-content-between">
+                                        <h5>Day 1 (10月3日)</h5>
+                                        <span class="badge bg-primary">Studio A</span>
+                                    </div>
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>S1</strong> - 客厅争吵
+                                                <div class="small text-muted">张三, 李四</div>
+                                            </div>
+                                            <span class="badge bg-light text-dark">09:00-12:00</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>S3</strong> - 厨房对话
+                                                <div class="small text-muted">张三, 王五</div>
+                                            </div>
+                                            <span class="badge bg-light text-dark">14:00-18:00</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div class="timeline-item">
+                                    <div class="d-flex justify-content-between">
+                                        <h5>Day 2 (10月4日)</h5>
+                                        <span class="badge bg-success">外景-中央公园</span>
+                                    </div>
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>S2</strong> - 公园发现怀表
+                                                <div class="small text-muted">张三</div>
+                                            </div>
+                                            <span class="badge bg-light text-dark">黄金时段 16:00-19:00</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card card-hover">
+                            <div class="card-header">资源冲突检测</div>
+                            <div class="card-body">
+                                <div class="alert alert-warning d-flex align-items-center">
+                                    <i class="mdi mdi-alert-outline me-2 fs-4"></i>
+                                    <div>
+                                        <strong>发现2处冲突：</strong>
+                                        <ul class="mb-0">
+                                            <li>演员"王五"在Day3同时需要出现在Studio B和Studio C</li>
+                                            <li>道具"古董车"使用时间重叠</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <button class="btn btn-sm btn-danger">重新优化排期</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- AI生成模态框 -->
+    <div class="modal fade" id="aiModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">AI智能生成</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">选择生成内容</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="genStoryboard" checked>
+                            <label class="form-check-label" for="genStoryboard">故事图谱</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="genBreakdown" checked>
+                            <label class="form-check-label" for="genBreakdown">服化道清单</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">详细程度</label>
+                        <select class="form-select">
+                            <option>基础版（快速）</option>
+                            <option selected>标准版</option>
+                            <option>详细版（慢速）</option>
+                        </select>
+                    </div>
+                    
+                    <div class="progress mb-3 d-none" id="aiProgress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+                    </div>
+                    
+                    <div class="alert alert-info d-none" id="aiStatus">
+                        <i class="mdi mdi-robot-outline me-2"></i>
+                        <span id="aiStatusText">正在分析剧本结构...</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="startGenerate">开始生成</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 模拟AI生成进度
+        document.getElementById('startGenerate').addEventListener('click', function() {
+            const progressBar = document.getElementById('aiProgress');
+            const statusDiv = document.getElementById('aiStatus');
+            const statusText = document.getElementById('aiStatusText');
+            
+            progressBar.classList.remove('d-none');
+            statusDiv.classList.remove('d-none');
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if(progress > 100) progress = 100;
+                progressBar.querySelector('.progress-bar').style.width = `${progress}%`;
+                
+                if(progress < 30) {
+                    statusText.textContent = "正在分析剧本结构...";
+                } else if(progress < 70) {
+                    statusText.textContent = "识别服化道需求中...";
+                } else {
+                    statusText.textContent = "优化排期计划...";
+                }
+                
+                if(progress === 100) {
+                    clearInterval(interval);
+                    statusText.innerHTML = '<i class="mdi mdi-check-circle-outline me-2 text-success"></i> 生成完成！';
+                    setTimeout(() => {
+                        bootstrap.Modal.getInstance(document.getElementById('aiModal')).hide();
+                    }, 1000);
+                }
+            }, 500);
+        });
+        
+        // 初始化Bootstrap标签页
+        const tabElms = document.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabElms.forEach(tabEl => {
+            tabEl.addEventListener('shown.bs.tab', function (event) {
+                // 这里可以添加标签页切换时的数据加载逻辑
+            });
+        });
+    </script>
+</body>
+</html>

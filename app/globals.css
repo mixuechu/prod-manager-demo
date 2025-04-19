@@ -6,6 +6,8 @@
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
+  --primary-color: #6c5ce7;
+  --secondary-color: #a29bfe;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -24,4 +26,46 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1 text-sm;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-white hover:opacity-90;
+  }
+  
+  .btn-outline-secondary {
+    @apply border border-gray-300 text-gray-700 hover:bg-gray-50;
+  }
+  
+  .btn-outline-primary {
+    @apply border border-primary text-primary hover:bg-primary hover:text-white;
+  }
+  
+  .btn-group {
+    @apply inline-flex rounded-lg overflow-hidden;
+  }
+  
+  .btn-group .btn {
+    @apply rounded-none border-r last:border-r-0;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100;
+  }
+  
+  .card-header {
+    @apply p-4 border-b border-gray-100 font-medium;
+  }
+  
+  .card-body {
+    @apply p-4;
+  }
 }
